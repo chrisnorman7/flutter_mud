@@ -1,6 +1,5 @@
 /// Provides the [WorldWidget] class.
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -31,7 +30,6 @@ class WorldWidgetState extends State<WorldWidget> {
   List<String> _messages;
   String _error;
   StreamSubscription<Uint8List> _socketSubscription;
-  final Utf8Codec _converter = const Utf8Codec(allowMalformed: true);
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _inputController = TextEditingController();
 
@@ -151,7 +149,7 @@ class WorldWidgetState extends State<WorldWidget> {
   }
 
   void onData(Uint8List data) {
-    final List<String> strings = _converter.decode(data).split('\n');
+    final List<String> strings = String.fromCharCodes(data).split('\n');
     setState(() {
       for (final String s in strings) {
         if (s.trim().isNotEmpty) {
