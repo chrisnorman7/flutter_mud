@@ -48,13 +48,18 @@ class WorldWidgetState extends State<WorldWidget> {
       if (_messages.isEmpty) {
         child = const Text('Not connected.');
       } else {
+        final List<String> messages = _messages.reversed.toList();
         child = ListView.builder(
-          itemCount: _messages.length,
+          controller: _scrollController,
+          reverse: true,
+          itemCount: messages.length,
           itemBuilder: (BuildContext context, int index) {
-            final String s = _messages[index];
+            final String s = messages[index];
             return ListTile(title: Text(s));
           },
         );
+        WidgetsBinding.instance.addPostFrameCallback(
+            (Duration d) => _scrollController.jumpTo(0.0));
       }
     } else if (_state == ConnectionStates.connecting) {
       child = Text(
