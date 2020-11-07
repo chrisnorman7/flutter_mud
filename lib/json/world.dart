@@ -1,6 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
 
-import 'alias.dart';
 import 'trigger.dart';
 
 part 'world.g.dart';
@@ -14,7 +13,7 @@ class World {
       this.aliases,
       this.connectCommands}) {
     triggers ??= <Trigger>[];
-    aliases ??= <Alias>[];
+    aliases ??= <Trigger>[];
   }
 
   factory World.fromJson(Map<String, dynamic> json) => _$WorldFromJson(json);
@@ -24,7 +23,7 @@ class World {
   int port;
   String connectCommands;
 
-  List<Alias> aliases;
+  List<Trigger> aliases;
   List<Trigger> triggers;
 
   Map<String, dynamic> toJson() => _$WorldToJson(this);

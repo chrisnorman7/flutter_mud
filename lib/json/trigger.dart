@@ -5,7 +5,9 @@ part 'trigger.g.dart';
 
 @JsonSerializable()
 class Trigger {
-  Trigger({this.pattern, this.substitution, this.sound});
+  Trigger({this.pattern, this.substitution, this.sound, this.active}) {
+    active ??= true;
+  }
 
   factory Trigger.fromJson(Map<String, dynamic> json) =>
       _$TriggerFromJson(json);
@@ -13,6 +15,7 @@ class Trigger {
   String pattern;
   String substitution;
   String sound;
+  bool active;
 
   Map<String, dynamic> toJson() => _$TriggerToJson(this);
 }

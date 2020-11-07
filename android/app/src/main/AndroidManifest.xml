@@ -1,5 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.metropolis.flutter_mud">
+ <uses-permission android:name="android.permission.INTERNET" />
    <application
         android:label="flutter_mud"
         android:icon="@mipmap/ic_launcher">

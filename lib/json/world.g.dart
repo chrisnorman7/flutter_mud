@@ -12,8 +12,8 @@ World _$WorldFromJson(Map<String, dynamic> json) {
     hostname: json['hostname'] as String,
     port: json['port'] as int,
     aliases: (json['aliases'] as List)
-        ?.map(
-            (e) => e == null ? null : Alias.fromJson(e as Map<String, dynamic>))
+        ?.map((e) =>
+            e == null ? null : Trigger.fromJson(e as Map<String, dynamic>))
         ?.toList(),
     connectCommands: json['connectCommands'] as String,
   )..triggers = (json['triggers'] as List)
