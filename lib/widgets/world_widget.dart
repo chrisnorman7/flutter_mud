@@ -6,6 +6,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
+import '../json/trigger.dart';
 import '../json/world.dart';
 import '../message.dart';
 
@@ -71,6 +72,11 @@ class WorldWidgetState extends State<WorldWidget> {
         controller: _inputController,
         decoration: const InputDecoration(labelText: 'Input'),
         onSubmitted: (String value) {
+          for (final Trigger alias in widget.world.aliases) {
+            if (alias.active && alias.matches(value)) {
+              value = alias.transformInput(value);
+            }
+          }
           _socket.writeln(value);
           addOutgoingMessage('> $value');
           _inputController.clear();
@@ -191,6 +197,11 @@ class WorldWidgetState extends State<WorldWidget> {
   }
 
   void addIncomingMessage(String text) {
+    for (final Trigger trigger in widget.world.triggers) {
+      if (trigger.active && trigger.matches(text)) {
+        text = trigger.transformInput(text);
+      }
+    }
     addMessage(text, MessageDirections.incoming);
   }
 

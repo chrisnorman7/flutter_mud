@@ -18,4 +18,19 @@ class Trigger {
   bool active;
 
   Map<String, dynamic> toJson() => _$TriggerToJson(this);
+
+  bool matches(String input) => RegExp(pattern).hasMatch(input);
+
+  String transformInput(String input) {
+    if (substitution == null) {
+      return null;
+    }
+    return input.replaceAllMapped(RegExp(pattern), (Match m) {
+      String r = substitution;
+      for (int i = 0; i <= m.groupCount; i++) {
+        r = r.replaceFirst('\\$i', m.group(i));
+      }
+      return r;
+    });
+  }
 }
