@@ -1,11 +1,13 @@
 /// Provides the [WorldWidget] class.
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
 import '../json/world.dart';
+import '../message.dart';
 
 enum ConnectionStates {
   disconnected,
@@ -27,7 +29,8 @@ class WorldWidget extends StatefulWidget {
 class WorldWidgetState extends State<WorldWidget> {
   Socket _socket;
   ConnectionStates _state = ConnectionStates.disconnected;
-  List<String> _messages;
+  List<Message> _messages;
+  int _highestIndex = -1;
   String _error;
   StreamSubscription<Uint8List> _socketSubscription;
   final ScrollController _scrollController = ScrollController();
@@ -36,7 +39,7 @@ class WorldWidgetState extends State<WorldWidget> {
   @override
   void initState() {
     super.initState();
-    _messages = <String>[];
+    _messages = <Message>[];
   }
 
   @override
@@ -46,18 +49,15 @@ class WorldWidgetState extends State<WorldWidget> {
       if (_messages.isEmpty) {
         child = const Text('Not connected.');
       } else {
-        final List<String> messages = _messages.reversed.toList();
         child = ListView.builder(
           controller: _scrollController,
-          reverse: true,
-          itemCount: messages.length,
-          itemBuilder: (BuildContext context, int index) {
-            final String s = messages[index];
-            return ListTile(title: Text(s));
-          },
+          itemCount: _messages.length,
+          itemBuilder: (BuildContext context, int index) =>
+              Text(_messages[index].string),
         );
-        WidgetsBinding.instance.addPostFrameCallback(
-            (Duration d) => _scrollController.jumpTo(0.0));
+        WidgetsBinding.instance.addPostFrameCallback((Duration d) =>
+            _scrollController
+                .jumpTo(_scrollController.position.maxScrollExtent));
       }
     } else if (_state == ConnectionStates.connecting) {
       child = Text(
@@ -67,30 +67,34 @@ class WorldWidgetState extends State<WorldWidget> {
     } else if (_error != null) {
       child = Text(_error);
     } else {
-      final List<String> messages = _messages.reversed.toList();
-      child = ListView.builder(
-        controller: _scrollController,
-        reverse: true,
-        shrinkWrap: true,
-        itemCount: _messages.length + 1,
-        itemBuilder: (BuildContext context, int index) {
-          if (index == 0) {
-            final TextField input = TextField(
-              controller: _inputController,
-              decoration: const InputDecoration(labelText: 'Input'),
-              onSubmitted: (String value) {
-                _socket.writeln(value);
-                _messages.add('> $value');
-                _inputController.clear();
-              },
-            );
-            return input;
-          }
-          final String message = messages[index - 1];
-          return Semantics(
-              child: ListTile(title: Text(message)), liveRegion: index == 1);
+      final TextField input = TextField(
+        controller: _inputController,
+        decoration: const InputDecoration(labelText: 'Input'),
+        onSubmitted: (String value) {
+          _socket.writeln(value);
+          addOutgoingMessage('> $value');
+          _inputController.clear();
         },
       );
+      child = ListView.builder(
+        controller: _scrollController,
+        itemCount: _messages.length + 1,
+        itemBuilder: (BuildContext context, int index) {
+          if (index == _messages.length) {
+            return input;
+          }
+          final Message message = _messages[index];
+          final Semantics s = Semantics(
+            child: Text(message.string),
+            liveRegion: index > _highestIndex &&
+                message.direction == MessageDirections.incoming,
+          );
+          _highestIndex = max(_highestIndex, index);
+          return s;
+        },
+      );
+      WidgetsBinding.instance.addPostFrameCallback((Duration d) =>
+          _scrollController.jumpTo(_scrollController.position.maxScrollExtent));
     }
     String connectTitle;
     void Function() connectFunc;
@@ -131,8 +135,8 @@ class WorldWidgetState extends State<WorldWidget> {
           _socket.listen(onData, onDone: onDone, onError: onError);
       setState(() {
         _state = ConnectionStates.connected;
-        _messages
-            .add('Connected to ${widget.world.hostname}:${widget.world.port}');
+        addIncomingMessage(
+            'Connected to ${widget.world.hostname}:${widget.world.port}');
       });
     } catch (e) {
       setState(() {
@@ -153,17 +157,16 @@ class WorldWidgetState extends State<WorldWidget> {
     setState(() {
       for (final String s in strings) {
         if (s.trim().isNotEmpty) {
-          _messages.add(s);
+          addIncomingMessage(s);
         }
       }
-      _scrollController.jumpTo(0.0);
     });
   }
 
   void onError(dynamic e, StackTrace t) {
-    _messages.add(e.toString());
+    addIncomingMessage(e.toString());
     if (t != null) {
-      _messages.add(t.toString());
+      addIncomingMessage(t.toString());
     }
   }
 
@@ -185,5 +188,17 @@ class WorldWidgetState extends State<WorldWidget> {
     if (_inputController != null) {
       _inputController.dispose();
     }
+  }
+
+  void addIncomingMessage(String text) {
+    addMessage(text, MessageDirections.incoming);
+  }
+
+  void addOutgoingMessage(String text) {
+    addMessage(text, MessageDirections.outgoing);
+  }
+
+  void addMessage(String text, MessageDirections direction) {
+    _messages.add(Message(text, direction));
   }
 }
